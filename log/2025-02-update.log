@@ -57,3 +57,4 @@
 [2025-02-25 08:58:06] [WARN] 获取 v2ray 订阅失败：https://fs.v2rayse.com/share/20250225/byoield1wh.txt - 500
 [2025-02-25 08:58:07] [WARN] 获取 clash 订阅失败：https://fs.v2rayse.com/share/20250225/ah0kf9cfrj.yaml - 500
 [2025-02-25 08:58:07] [WARN] 未能获取新的更新内容
+[2025-02-25 20:23:23] [INFO] 更新成功：['v2ray: 200', 'clash: 200']
