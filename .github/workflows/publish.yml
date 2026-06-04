@@ -3,67 +3,16 @@ name: Publish to PyPI
 on:
   push:
     branches: [main]
+    # 避免循环触发
+    paths-ignore:
+      - 'log/**'
+      - 'subscribe/**'
+      - 'mail/**'
+      - '**.md'
   workflow_dispatch:
 
 jobs:
-  get_version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      is_new_version: ${{ steps.version.outputs.is_new_version }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Get current version
-        id: version
-        run: |
-          # Get current version from pyproject.toml
-          current_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          echo "current_version=$current_version" >> $GITHUB_OUTPUT
-          
-          # Calculate new version (based on commit count)
-          commit_count=$(git rev-list --count HEAD)
-          base_version="1.0.${commit_count}"
-          echo "version=$base_version" >> $GITHUB_OUTPUT
-          
-          # Check if version changed
-          if [ "$current_version" != "$base_version" ]; then
-            echo "is_new_version=true" >> $GITHUB_OUTPUT
-            echo "Version will be updated from $current_version to $base_version"
-          else
-            echo "is_new_version=false" >> $GITHUB_OUTPUT
-            echo "Version remains $base_version"
-          fi
-
-  update_version:
-    needs: get_version
-    if: needs.get_version.outputs.is_new_version == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Update version in pyproject.toml
-        run: |
-          new_version="${{ needs.get_version.outputs.version }}"
-          sed -i 's/^version = ".*"/version = "'"$new_version"'"/' pyproject.toml
-          
-          # Also update __init__.py
-          sed -i 's/__version__ = ".*"/__version__ = "'"$new_version"'"/' src/get_subscribe/__init__.py
-      
-      - name: Commit version bump
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git add pyproject.toml src/get_subscribe/__init__.py
-          git commit -m "bump: version to ${{ needs.get_version.outputs.version }}"
-          git push
-
   build_and_publish:
-    needs: [get_version, update_version]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -78,41 +27,80 @@ jobs:
       
       - name: Install build tools
         run: |
+          pip install --upgrade pip
           pip install build twine
+      
+      - name: Get version
+        id: version
+        run: |
+          # Get commit count for version
+          commit_count=$(git rev-list --count HEAD)
+          version="1.0.${commit_count}"
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Publishing version: $version"
+      
+      - name: Update version
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          sed -i 's/^version = ".*"/version = "'"$version"'"/' pyproject.toml
+          sed -i 's/__version__ = ".*"/__version__ = "'"$version"'"/' src/get_subscribe/__init__.py
+      
+      - name: Commit version bump
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add pyproject.toml src/get_subscribe/__init__.py
+          git diff --staged --quiet || git commit -m "bump: version to ${{ steps.version.outputs.version }}"
       
       - name: Build package
         run: |
           python -m build
       
+      - name: Check if PYPI_TOKEN exists
+        id: check_token
+        run: |
+          if [ -n "${{ secrets.PYPI_TOKEN }}" ]; then
+            echo "has_token=true" >> $GITHUB_OUTPUT
+            echo "PYPI_TOKEN is configured"
+          else
+            echo "has_token=false" >> $GITHUB_OUTPUT
+            echo "PYPI_TOKEN not configured, skipping PyPI publish"
+          fi
+      
       - name: Publish to PyPI
+        if: steps.check_token.outputs.has_token == 'true'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          twine upload dist/*
+          twine upload dist/* --skip-existing || echo "Upload failed or version exists"
       
       - name: Create GitHub Release
+        if: steps.check_token.outputs.has_token == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ needs.get_version.outputs.version }}
-          name: v${{ needs.get_version.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
           body: |
-            ## Release v${{ needs.get_version.outputs.version }}
+            ## Release v${{ steps.version.outputs.version }}
             
-            ### Changes
-            - Automatic release from main branch
+            自动从 main 分支发布的版本。
             
-            ### Installation
+            ### 安装
             ```bash
-            pip install get-subscribe==${{ needs.get_version.outputs.version }}
+            pip install get-subscribe==${{ steps.version.outputs.version }}
             ```
             
-            ### Features
-            - Auto-detect and import to VPN clients
-            - Support for Clash, V2Ray, Trojan, SSR
-            - CLI with --auto-import and --import-only options
-          files: |
-            dist/*
+            ### 功能
+            - 自动检测并导入订阅到 VPN 客户端
+            - 支持 Clash, V2Ray, Trojan, SSR
+            - CLI 选项: --auto-import, --import-only, --show-info
+          files: dist/*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Push changes
+        run: |
+          git pull --rebase || true
+          git push || true
