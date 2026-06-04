@@ -1,38 +1,46 @@
 name: 更新项目信息
+
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 */12 * * *'
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
     - name: 迁出代码
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+    
     - name: 安装Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.11.6'
+        python-version: '3.11'
+    
     - name: 加载缓存
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/run_in_Actions/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+    
     - name: 设置时区
       run: sudo timedatectl set-timezone 'Asia/Shanghai'
+    
     - name: 安装依赖
       run: |
         pip install -r requirements.txt
+    
     - name: 执行任务
       run: |
-        python get_projaec_info.py --user ermaozi --project get_subscribe --save_path mail/project_info.svg --theme dark --token ${{ secrets.TOKEN }}
+        python get_projaec_info.py --user adminlove520 --project get_subscribe --save_path mail/project_info.svg --theme dark
+    
     - name: 提交更改
       run: |
          git config core.ignorecase false
-         git config --local user.email "admin@ermao.net"
-         git config --local user.name "ermaozi"
+         git config --local user.email "actions@github.com"
+         git config --local user.name "GitHub Actions"
          git add .
-         git commit -m "更新项目信息"
+         git commit -m "更新项目信息" || echo "No changes to commit"
          git push

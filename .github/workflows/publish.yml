@@ -2,52 +2,117 @@ name: Publish to PyPI
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to publish (e.g. 1.0.1)'
-        required: false
-        type: string
 
 jobs:
-  publish:
+  get_version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_new_version: ${{ steps.version.outputs.is_new_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get current version
+        id: version
+        run: |
+          # Get current version from pyproject.toml
+          current_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
+          
+          # Calculate new version (based on commit count)
+          commit_count=$(git rev-list --count HEAD)
+          base_version="1.0.${commit_count}"
+          echo "version=$base_version" >> $GITHUB_OUTPUT
+          
+          # Check if version changed
+          if [ "$current_version" != "$base_version" ]; then
+            echo "is_new_version=true" >> $GITHUB_OUTPUT
+            echo "Version will be updated from $current_version to $base_version"
+          else
+            echo "is_new_version=false" >> $GITHUB_OUTPUT
+            echo "Version remains $base_version"
+          fi
+
+  update_version:
+    needs: get_version
+    if: needs.get_version.outputs.is_new_version == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      - name: Update version in pyproject.toml
+        run: |
+          new_version="${{ needs.get_version.outputs.version }}"
+          sed -i 's/^version = ".*"/version = "'"$new_version"'"/' pyproject.toml
+          
+          # Also update __init__.py
+          sed -i 's/__version__ = ".*"/__version__ = "'"$new_version"'"/' src/get_subscribe/__init__.py
+      
+      - name: Commit version bump
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add pyproject.toml src/get_subscribe/__init__.py
+          git commit -m "bump: version to ${{ needs.get_version.outputs.version }}"
+          git push
 
+  build_and_publish:
+    needs: [get_version, update_version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+      
       - name: Install build tools
-        run: pip install build
-
+        run: |
+          pip install build twine
+      
       - name: Build package
-        run: python -m build
-
+        run: |
+          python -m build
+      
       - name: Publish to PyPI
-        if: github.event_name == 'push'
-        run: |
-          pip install twine
-          twine upload dist/* -u __token__ -p "${{ secrets.PYPI_TOKEN }}"
         env:
+          TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-
-      - name: Publish to PyPI (manual)
-        if: github.event_name == 'workflow_dispatch'
         run: |
-          pip install twine
-          twine upload dist/* -u __token__ -p "${{ secrets.PYPI_TOKEN }}"
-        env:
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-
+          twine upload dist/*
+      
       - name: Create GitHub Release
-        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/*
+          tag_name: v${{ needs.get_version.outputs.version }}
+          name: v${{ needs.get_version.outputs.version }}
+          body: |
+            ## Release v${{ needs.get_version.outputs.version }}
+            
+            ### Changes
+            - Automatic release from main branch
+            
+            ### Installation
+            ```bash
+            pip install get-subscribe==${{ needs.get_version.outputs.version }}
+            ```
+            
+            ### Features
+            - Auto-detect and import to VPN clients
+            - Support for Clash, V2Ray, Trojan, SSR
+            - CLI with --auto-import and --import-only options
+          files: |
+            dist/*
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

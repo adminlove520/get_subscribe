@@ -1,11 +1,8 @@
 name: 自动采集
 
-# 触发条件
 on:
   workflow_dispatch:
-  # 定时触发
   schedule:
-    # 每6小时获取一次
     - cron: '0 */12 * * *'
 
 jobs:
@@ -13,23 +10,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: 迁出代码
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+    
     - name: 安装Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'
+    
     - name: 加载缓存
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/run_in_Actions/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+    
     - name: 设置时区
       run: sudo timedatectl set-timezone 'Asia/Shanghai'
+    
     - name: 安装依赖
       run: |
         pip install -r requirements.txt
+    
     - name: 执行任务
       run: |
         python main.py
@@ -40,5 +42,5 @@ jobs:
          git config --local user.email "admin@ermao.net"
          git config --local user.name "ermaozi"
          git add .
-         git commit -m "$(date '+%Y-%m-%d %H:%M:%S')更新订阅链接"
+         git commit -m "$(date '+%Y-%m-%d %H:%M:%S')更新订阅链接" || echo "No changes to commit"
          git push
