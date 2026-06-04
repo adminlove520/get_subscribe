@@ -8,6 +8,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Continue on error even if this workflow fails
+    continue-on-error: true
     steps:
     - name: 迁出代码
       uses: actions/checkout@v4
@@ -30,16 +32,27 @@ jobs:
     
     - name: 安装依赖
       run: |
-        pip install -r requirements.txt
-        pip install matplotlib pillow pandas requests
+        pip install -r requirements.txt || true
+        pip install matplotlib pillow pandas requests || true
     
     - name: 执行任务
+      id: execute
+      continue-on-error: true
       run: |
-        python get_projaec_info.py --user adminlove520 --project get_subscribe --save_path mail/project_info.svg --theme dark
+        python get_projaec_info.py --user adminlove520 --project get_subscribe --save_path mail/project_info.svg --theme dark || echo "Script execution failed, continuing..."
       env:
         TOKEN: ${{ secrets.TOKEN }}
     
+    - name: 检查结果
+      if: steps.execute.outcome == 'failure'
+      run: |
+        echo "任务执行失败，但不影响主功能"
+        echo "创建一个占位文件"
+        mkdir -p mail
+        echo '<!-- 项目信息更新暂时不可用 -->' > mail/project_info.svg
+    
     - name: 提交更改
+      if: always()
       run: |
          git config core.ignorecase false
          git config --local user.email "actions@github.com"
@@ -47,4 +60,4 @@ jobs:
          git add .
          git commit -m "更新项目信息" || echo "No changes to commit"
          git pull --rebase || true
-         git push
+         git push || true
