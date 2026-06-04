@@ -1,0 +1,181 @@
+Metadata-Version: 2.4
+Name: get-subscribe
+Version: 1.0.0
+Summary: 免费机场/VPN 订阅自动获取工具 - Clash / V2Ray / Trojan / SSR 订阅链接自动抓取
+Author-email: adminlove520 <adminlove520@github.com>
+License: MIT
+Project-URL: Homepage, https://github.com/adminlove520/get_subscribe
+Project-URL: Repository, https://github.com/adminlove520/get_subscribe
+Project-URL: Issues, https://github.com/adminlove520/get_subscribe/issues
+Keywords: vpn,clash,v2ray,subscribe,proxy,机场,梯子,翻墙
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Internet
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests>=2.28.0
+Requires-Dist: feedparser>=6.0.0
+Provides-Extra: dev
+Requires-Dist: build>=1.0.0; extra == "dev"
+Requires-Dist: twine>=4.0.0; extra == "dev"
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Dynamic: license-file
+
+# ✈️ get_subscribe
+
+> 免费机场 / 免费 VPN — 自动获取 Clash / V2Ray / Trojan / SSR 订阅链接，间隔 12 小时持续更新
+
+[![PyPI](https://img.shields.io/pypi/v/get-subscribe)](https://pypi.org/project/get-subscribe/)
+[![Python](https://img.shields.io/pypi/pyversions/get-subscribe)](https://pypi.org/project/get-subscribe/)
+[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+
+---
+
+## ⚠️ 免责声明
+
+- 链接来自网络，仅供学习研究使用
+- 使用前请务必遵守当地法律法规
+- 本项目不对任何使用后果负责
+
+---
+
+## 🌟 功能特性
+
+- **自动抓取**：从公开 RSS 源定时抓取最新免费订阅
+- **多协议支持**：Clash 配置（`.yml`）、V2Ray 文本（`.txt`）
+- **变更检测**：仅在内容实际变化时记录日志，避免重复通知
+- **灵活使用**：pip 安装 CLI 一键运行，或作为 Python 库集成
+- **日志记录**：按月自动归档运行日志，便于排查问题
+
+---
+
+## 🚀 快速上手
+
+### pip 安装（推荐）
+
+```bash
+pip install get-subscribe
+get-subscribe          # 一键运行
+```
+
+### 或从源码安装
+
+```bash
+git clone https://github.com/adminlove520/get_subscribe.git
+cd get_subscribe
+pip install -e .
+get-subscribe
+```
+
+### Python API
+
+```python
+from get_subscribe import GetSubscribe
+
+fetcher = GetSubscribe(subscribe_dir="./my_subs")
+results = fetcher.run()
+# results = {'v2ray': 200, 'clash': 200}
+```
+
+---
+
+## 📁 输出文件
+
+运行后保存在 `subscribe/` 目录：
+
+| 文件 | 协议 | 说明 |
+|------|------|------|
+| `clash.yml` | Clash.Meta | 适用于 Clash Verge / Clash for Windows / ClashX |
+| `v2ray.txt` | VLESS / VMess | 适用于 v2rayN / Qv2ray / Shadowrocket |
+
+### 快速订阅地址
+
+```
+Clash 订阅：https://git.io/emzclash
+V2Ray 订阅：https://git.io/emzv2ray
+```
+
+> GitHub Actions 每 12 小时自动更新，点击即可复制使用。
+
+---
+
+## 📱 各平台客户端配置
+
+### Windows
+- [Clash Verge](https://github.com/zzzgydi/clash-verge) / [Clash for Windows](https://github.com/Fndroid/clash_for_windows_pkg)
+- 下载 `clash.yml`，导入客户端使用
+
+### macOS
+- [ClashX Meta](https://github.com/meta4wd/clashx-meta) / [Stash](https://github.com/Stash-App/Stash)
+- Safari 下载后直接拖入窗口导入
+
+### Android
+- [Clash Meta for Android](https://github.com/MetaCubeX/ClashMetaForAndroid)
+- [v2rayNG](https://github.com/2dust/v2rayNG)（支持 v2ray.txt）
+
+### iOS
+- [Stash](https://apps.apple.com/app/stash/id1596063349)（Clash 协议）
+- [Shadowrocket](https://apps.apple.com/app/shadowrocket/id932747118)（多协议）
+
+---
+
+## ⚙️ 配置与自定义
+
+### 自定义订阅目录
+
+```python
+fetcher = GetSubscribe(subscribe_dir="/path/to/your/subs")
+fetcher.run()
+```
+
+### 仅检查（不保存文件）
+
+```python
+fetcher = GetSubscribe(check_only=True)
+fetcher.run()
+```
+
+### 与 cron 配合（Linux/macOS）定时运行
+
+```bash
+# 每 12 小时自动更新
+crontab -e
+# 添加：
+0 */12 * * * /usr/local/bin/get-subscribe >> /var/log/subscribe.log 2>&1
+```
+
+### GitHub Actions 自动部署
+
+Fork 后开启 Actions，`.github/workflows/` 中已包含定时任务配置。
+
+---
+
+## 🛠️ 开发
+
+```bash
+# 安装开发依赖
+pip install -e ".[dev]"
+
+# 构建发布包
+python -m build
+
+# 上传 PyPI（需配置 token）
+twine upload dist/*
+```
+
+---
+
+## 📝 License
+
+MIT License · adminlove520

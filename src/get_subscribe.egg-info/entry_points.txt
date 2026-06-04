@@ -1,0 +1,2 @@
+[console_scripts]
+get-subscribe = get_subscribe.main:main

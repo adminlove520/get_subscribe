@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+src/get_subscribe/__init__.py
+src/get_subscribe/fetcher.py
+src/get_subscribe.egg-info/PKG-INFO
+src/get_subscribe.egg-info/SOURCES.txt
+src/get_subscribe.egg-info/dependency_links.txt
+src/get_subscribe.egg-info/entry_points.txt
+src/get_subscribe.egg-info/requires.txt
+src/get_subscribe.egg-info/top_level.txt
