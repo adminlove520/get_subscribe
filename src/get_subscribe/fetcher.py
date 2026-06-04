@@ -19,6 +19,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from html import unescape
 
 import feedparser
 import requests
@@ -89,19 +90,40 @@ class GetSubscribe:
 
         results = {}
 
-        # V2Ray 订阅
-        v2ray_list = re.findall(r">V2Ray/XRay -> (.*?)</span>", summary)
-        if v2ray_list:
-            v2ray_url = v2ray_list[-1].replace("amp;", "")
-            status = self._fetch_and_save("v2ray", v2ray_url, "v2ray.txt")
-            results["v2ray"] = status
+        # 从 HTML 中提取订阅链接
+        # RSS 中的链接格式: <a href="https://v2rayse.com/fs/public/...txt" ...>V2Ray 订阅链接</a>
+        # Clash 订阅 (.yaml 或 .yml)
+        clash_pattern = r'<a\s+href="([^"]*\.(?:yaml|yml))"[^>]*>\s*Clash\s*订阅链接\s*</a>'
+        clash_matches = re.findall(clash_pattern, summary, re.IGNORECASE)
+        
+        # V2Ray 订阅 (.txt)
+        v2ray_pattern = r'<a\s+href="([^"]*\.txt)"[^>]*>\s*V2Ray\s*订阅链接\s*</a>'
+        v2ray_matches = re.findall(v2ray_pattern, summary, re.IGNORECASE)
+        
+        # 备用方案：通过关键词匹配
+        if not clash_matches:
+            clash_alt = re.findall(r'<a\s+href="([^"]*)"[^>]*>Clash[^<]*</a>', summary, re.IGNORECASE)
+            clash_matches = [url for url in clash_alt if url.endswith(('.yaml', '.yml'))]
+        
+        if not v2ray_matches:
+            v2ray_alt = re.findall(r'<a\s+href="([^"]*)"[^>]*>V2Ray[^<]*</a>', summary, re.IGNORECASE)
+            v2ray_matches = [url for url in v2ray_alt if url.endswith('.txt')]
 
-        # Clash 订阅
-        clash_list = re.findall(r">clash -> (.*?)</span>", summary)
-        if clash_list:
-            clash_url = clash_list[-1].replace("amp;", "")
+        # 处理 Clash 订阅
+        if clash_matches:
+            clash_url = unescape(clash_matches[0])
             status = self._fetch_and_save("clash", clash_url, "clash.yml")
             results["clash"] = status
+        else:
+            self.log("未找到 Clash 订阅链接", "WARN")
+
+        # 处理 V2Ray 订阅
+        if v2ray_matches:
+            v2ray_url = unescape(v2ray_matches[0])
+            status = self._fetch_and_save("v2ray", v2ray_url, "v2ray.txt")
+            results["v2ray"] = status
+        else:
+            self.log("未找到 V2Ray 订阅链接", "WARN")
 
         if results:
             self._log_change(results)
