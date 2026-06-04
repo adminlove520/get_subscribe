@@ -9,3 +9,4 @@ __author__ = "adminlove520"
 from .fetcher import GetSubscribe
 
 __all__ = ["GetSubscribe", "__version__"]
+test
