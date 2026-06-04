@@ -31,6 +31,7 @@ jobs:
     - name: 安装依赖
       run: |
         pip install -r requirements.txt
+        pip install matplotlib pillow requests
     
     - name: 执行任务
       run: |
@@ -43,4 +44,5 @@ jobs:
          git config --local user.name "GitHub Actions"
          git add .
          git commit -m "更新项目信息" || echo "No changes to commit"
+         git pull --rebase || true
          git push
