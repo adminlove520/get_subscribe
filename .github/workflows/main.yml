@@ -11,6 +11,8 @@ jobs:
     steps:
     - name: 迁出代码
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: 安装Python
       uses: actions/setup-python@v5
@@ -39,8 +41,9 @@ jobs:
     - name: 提交更改
       run: |
          git config core.ignorecase false
-         git config --local user.email "admin@ermao.net"
-         git config --local user.name "ermaozi"
+         git config --local user.email "actions@github.com"
+         git config --local user.name "GitHub Actions"
          git add .
          git commit -m "$(date '+%Y-%m-%d %H:%M:%S')更新订阅链接" || echo "No changes to commit"
+         git pull --rebase || true
          git push
