@@ -1,41 +1,147 @@
-# ⏰ 免费机场 免费梯子 翻墙VPN
+# ✈️ get_subscribe
 
-## ⚠️ 注意
+> 免费机场 / 免费 VPN — 自动获取 Clash / V2Ray / Trojan / SSR 订阅链接，间隔 12 小时持续更新
 
-- 链接来自网络，仅作学习使用
-- 使用页面所提供的任意资源时，请务必遵守当地法律
+[![PyPI](https://img.shields.io/pypi/v/get-subscribe)](https://pypi.org/project/get-subscribe/)
+[![Python](https://img.shields.io/pypi/pyversions/get-subscribe)](https://pypi.org/project/get-subscribe/)
+[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
-## 🚀 每12小时更新一次
+---
 
-- clash订阅链接
-  ```
-  https://git.io/emzclash
-  ```
+## ⚠️ 免责声明
 
-- v2ray订阅链接
-  ```
-  https://git.io/emzv2ray
-  ```
+- 链接来自网络，仅供学习研究使用
+- 使用前请务必遵守当地法律法规
+- 本项目不对任何使用后果负责
 
-## 📘 客户端使用方法
+---
 
-- 📱 [Android](https://www.ermao.net/article/eh8f4n86/)
-- 🖥 [Windows](https://www.ermao.net/article/0gematwc/)
-- 🍎 [iOS](https://www.ermao.net/article/z747kgjd/)
+## 🌟 功能特性
 
-## 💸 付费订阅
+- **自动抓取**：从公开 RSS 源定时抓取最新免费订阅
+- **多协议支持**：Clash 配置（`.yml`）、V2Ray 文本（`.txt`）
+- **变更检测**：仅在内容实际变化时记录日志，避免重复通知
+- **灵活使用**：pip 安装 CLI 一键运行，或作为 Python 库集成
+- **日志记录**：按月自动归档运行日志，便于排查问题
 
-我搜罗的一些比较便宜好用的机场，觉得免费订阅不好使的朋友们可以在这里面找找。
+---
 
-[https://www.ermao.net/posts/vpn](https://www.ermao.net/posts/vpn)
+## 🚀 快速上手
 
-[https://www.pyjichang.com](https://www.pyjichang.com)
+### pip 安装（推荐）
 
-## 📷 使用截图
+```bash
+pip install get-subscribe
+get-subscribe          # 一键运行
+```
 
-低峰期可以看视频，高峰期可能会有点卡顿。
+### 或从源码安装
 
-![alt text](https://www.ermao.net/assets/image-St_c8wNW.png)
+```bash
+git clone https://github.com/adminlove520/get_subscribe.git
+cd get_subscribe
+pip install -e .
+get-subscribe
+```
 
-![alt text](https://www.ermao.net/assets/image-1-D1lHRY7Y.png)
+### Python API
 
+```python
+from get_subscribe import GetSubscribe
+
+fetcher = GetSubscribe(subscribe_dir="./my_subs")
+results = fetcher.run()
+# results = {'v2ray': 200, 'clash': 200}
+```
+
+---
+
+## 📁 输出文件
+
+运行后保存在 `subscribe/` 目录：
+
+| 文件 | 协议 | 说明 |
+|------|------|------|
+| `clash.yml` | Clash.Meta | 适用于 Clash Verge / Clash for Windows / ClashX |
+| `v2ray.txt` | VLESS / VMess | 适用于 v2rayN / Qv2ray / Shadowrocket |
+
+### 快速订阅地址
+
+```
+Clash 订阅：https://git.io/emzclash
+V2Ray 订阅：https://git.io/emzv2ray
+```
+
+> GitHub Actions 每 12 小时自动更新，点击即可复制使用。
+
+---
+
+## 📱 各平台客户端配置
+
+### Windows
+- [Clash Verge](https://github.com/zzzgydi/clash-verge) / [Clash for Windows](https://github.com/Fndroid/clash_for_windows_pkg)
+- 下载 `clash.yml`，导入客户端使用
+
+### macOS
+- [ClashX Meta](https://github.com/meta4wd/clashx-meta) / [Stash](https://github.com/Stash-App/Stash)
+- Safari 下载后直接拖入窗口导入
+
+### Android
+- [Clash Meta for Android](https://github.com/MetaCubeX/ClashMetaForAndroid)
+- [v2rayNG](https://github.com/2dust/v2rayNG)（支持 v2ray.txt）
+
+### iOS
+- [Stash](https://apps.apple.com/app/stash/id1596063349)（Clash 协议）
+- [Shadowrocket](https://apps.apple.com/app/shadowrocket/id932747118)（多协议）
+
+---
+
+## ⚙️ 配置与自定义
+
+### 自定义订阅目录
+
+```python
+fetcher = GetSubscribe(subscribe_dir="/path/to/your/subs")
+fetcher.run()
+```
+
+### 仅检查（不保存文件）
+
+```python
+fetcher = GetSubscribe(check_only=True)
+fetcher.run()
+```
+
+### 与 cron 配合（Linux/macOS）定时运行
+
+```bash
+# 每 12 小时自动更新
+crontab -e
+# 添加：
+0 */12 * * * /usr/local/bin/get-subscribe >> /var/log/subscribe.log 2>&1
+```
+
+### GitHub Actions 自动部署
+
+Fork 后开启 Actions，`.github/workflows/` 中已包含定时任务配置。
+
+---
+
+## 🛠️ 开发
+
+```bash
+# 安装开发依赖
+pip install -e ".[dev]"
+
+# 构建发布包
+python -m build
+
+# 上传 PyPI（需配置 token）
+twine upload dist/*
+```
+
+---
+
+## 📝 License
+
+MIT License · adminlove520
