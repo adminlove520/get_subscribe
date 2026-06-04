@@ -31,11 +31,13 @@ jobs:
     - name: 安装依赖
       run: |
         pip install -r requirements.txt
-        pip install matplotlib pillow requests
+        pip install matplotlib pillow pandas requests
     
     - name: 执行任务
       run: |
         python get_projaec_info.py --user adminlove520 --project get_subscribe --save_path mail/project_info.svg --theme dark
+      env:
+        TOKEN: ${{ secrets.TOKEN }}
     
     - name: 提交更改
       run: |
