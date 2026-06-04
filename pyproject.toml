@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "get-subscribe"
-version = "1.0.25"
+version = "1.0.27"
 description = "免费机场/VPN 订阅自动获取工具 - Clash / V2Ray / Trojan / SSR 订阅链接自动抓取"
 readme = "README.md"
 license = {text = "MIT"}
