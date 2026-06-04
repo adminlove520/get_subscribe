@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""VPN Client Manager"""
-
 import os
 import sys
 import subprocess
@@ -8,6 +6,10 @@ import shutil
 import time
 from pathlib import Path
 from typing import Tuple
+try:
+    from .client_launcher import ClientLauncher
+except:
+    from client_launcher import ClientLauncher
 
 
 class VPNClient:
@@ -20,10 +22,10 @@ class VPNClient:
 
 class ClientDetector:
     WINDOWS_CLIENTS = [
-        VPNClient("Clash for Windows", r"%USERPROFILE%\.config\Clash"),
-        VPNClient("ClashX", r"%USERPROFILE%\.config\clash"),
-        VPNClient("Clash Verge", r"%USERPROFILE%\.config\clash", import_method="profiles"),
-        VPNClient("v2rayN", r"%USERPROFILE%\v2rayN", import_method="clipboard"),
+        VPNClient("Clash for Windows", r"%USERPROFILE%\.config\Clash", "Clash for Windows.exe"),
+        VPNClient("ClashX", r"%USERPROFILE%\.config\clash", "ClashX.exe"),
+        VPNClient("Clash Verge", r"%USERPROFILE%\.config\clash", "clash-verge.exe", "profiles"),
+        VPNClient("v2rayN", r"%USERPROFILE%\v2rayN", "v2rayN.exe", "clipboard"),
     ]
     
     def __init__(self, verbose=False):
@@ -72,7 +74,6 @@ class SubscriptionImporter:
             
             if self.verbose:
                 print(f"  ✓ Clash Verge 订阅已导入: {profile_name}")
-                print(f"    请在 Clash Verge 中点击订阅管理刷新")
             return True
         except Exception as e:
             if self.verbose:
@@ -81,32 +82,15 @@ class SubscriptionImporter:
     
     def _update_clash_verge_list(self, list_file, profile_name):
         if not list_file.exists():
-            default_content = f"""files:
-  - time: {profile_name}
-    name: get-subscribe
-    mode: rule
-    interval: 12
-index: 0
-"""
-            list_file.write_text(default_content, encoding='utf-8')
+            list_file.write_text(f"files:\n  - time: {profile_name}\n    name: get-subscribe\n    mode: rule\nindex: 0\n", encoding='utf-8')
             return
         
         content = list_file.read_text(encoding='utf-8')
-        
         if profile_name in content:
             return
         
-        new_entry = f"""  - time: {profile_name}
-    name: get-subscribe
-    mode: rule
-    interval: 12
-"""
-        
-        if 'index:' in content:
-            content = content.replace('index:', new_entry + 'index:')
-        else:
-            content = content.rstrip() + '\n' + new_entry + 'index: 0\n'
-        
+        new_entry = f"  - time: {profile_name}\n    name: get-subscribe\n    mode: rule\n"
+        content = content.replace('index:', new_entry + 'index:')
         list_file.write_text(content, encoding='utf-8')
     
     def _import_clash(self):
@@ -151,7 +135,7 @@ index: 0
             return False
 
 
-def auto_detect_and_import(subscribe_dir, verbose=False):
+def auto_detect_and_import(subscribe_dir, auto_launch=False, verbose=False):
     detector = ClientDetector(verbose=verbose)
     clients = detector.detect_all()
     
@@ -163,13 +147,28 @@ def auto_detect_and_import(subscribe_dir, verbose=False):
         print(f"检测到 {len(clients)} 个 VPN 客户端")
         print(f"{'='*60}")
     
-    success_count = 0
+    imported_count = 0
+    launched_count = 0
+    
     for i, client in enumerate(clients, 1):
         if verbose:
             print(f"\n{i}. {client.name}")
         
         importer = SubscriptionImporter(client, subscribe_dir, verbose=verbose)
         if importer.import_subscription():
-            success_count += 1
+            imported_count += 1
+            
+            if auto_launch:
+                launcher = ClientLauncher(client, verbose=verbose)
+                if launcher.launch():
+                    launched_count += 1
     
-    return len(clients), success_count
+    if verbose and auto_launch:
+        print(f"\n{'='*60}")
+        if launched_count > 0:
+            print(f"✓ 已导入并启动 {launched_count} 个客户端")
+        else:
+            print("客户端启动失败或未安装")
+        print(f"{'='*60}")
+    
+    return len(clients), imported_count
